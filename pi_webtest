@@ -9,7 +9,7 @@ import time
 #display = Display(visible=0, size=(800, 600))
 #display.start()
 
-browser = webdriver.Chrome(executable_path='C:/chromedriver_win32/chromedriver')#
+browser = webdriver.Chrome(executable_path='C:/chromedriver_win32/chromedriver')
 browser.get('https://fast.com/en/gb/')
 time.sleep(20)
 
