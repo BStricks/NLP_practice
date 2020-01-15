@@ -1,0 +1,8 @@
+from selenium import webdriver
+import time
+#need to install chromedriver, this is possible on rpi according to forums!
+browser = webdriver.Chrome(executable_path='C:/chromedriver_win32/chromedriver')
+browser.get('https://fast.com/en/gb/')
+time.sleep(20)
+speed_class = browser.find_element_by_class_name('speed-results-container')
+print(speed_class.text)
