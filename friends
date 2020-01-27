@@ -1,0 +1,155 @@
+#blog: https://medium.com/swlh/practical-ai-generate-english-pronoun-questions-from-any-story-using-neural-coreference-fe958ae1eb21
+
+#pip install spacy==2.1.0
+#pip install neuralcoref --no-binary neuralcoref
+#pip install nltk
+#spacy load en
+
+import spacy
+nlp = spacy.load('en')
+import re
+from nltk.tokenize import sent_tokenize
+
+# Add neural coref to SpaCy's pipe
+import neuralcoref
+neuralcoref.add_to_pipe(nlp,greedyness=0.5,max_dist=50,blacklist=False)
+
+
+text = "sun people know many things about the Sun. They know how old it is. The Sun is more than 4½ billion years old. It is also a star that is the centre of our solar system. They also know the Sun’s size."
+doc = nlp(text)
+clusters = doc._.coref_clusters
+print("clusters ",clusters)
+resolved_coref = doc._.coref_resolved
+print ("Resolved by NeuralCoref: \n" )
+print(resolved_coref)
+
+# ################################################################## loading in friends data
+import pandas as pd
+import requests
+import json
+
+
+# seasons 1-4
+def labeller1(chars, df):
+    for i in chars:
+        try:
+            loc = i[0]
+            person = i[2]
+            df.at[loc,'chars'] = person
+        except:
+            pass
+    return df
+
+
+def labeller2(entities,df):
+    for key in entities:
+        entities['u-ent']
+        for sub-list in list of u-ent:
+            utterance = sublist[0]
+            token =
+        entities['s-ent']
+
+
+
+
+def dataframe_creation1(season_in):
+    df_list = []
+
+    for i in range(0, len(season_in['episodes'])):
+        for e in range(0, len(season_in['episodes'][i]['scenes'])):
+            for a in range(0, len(season_in['episodes'][i]['scenes'][e]['utterances'])):
+
+                d1 = season_in['episodes'][i]['scenes'][e]['utterances'][a]
+                d1_filter = {key: d1[key] for key in d1.keys() & {'utterance_id', 'speakers', 'tokens', 'character_entities'}}
+
+                for u in range(0, len(d1_filter['tokens'])):
+                    tokens = d1_filter['tokens'][u]
+                    char = d1_filter['character_entities'][u]
+                    speakers = ''.join(d1_filter['speakers'])
+                    # create the df
+                    df = pd.DataFrame()
+                    df['tokens'] = tokens
+                    df['utterance_id'] = d1_filter['utterance_id']
+                    df['speakers'] = speakers
+                    df['chars'] = 'NA'
+                    df2 = labeller1(char, df)
+                    df_list.append(df2)
+
+    return pd.concat(df_list)
+
+
+def dataframe_creation2(season_in):
+    df_list = []
+
+    for i in range(0, len(season_in['episodes'])):
+        for e in range(0, len(season_in['episodes'][i]['scenes'])):
+            for a in range(0, len(season_in['episodes'][i]['scenes'][e]['utterances'])):
+
+                d1 = season_in['episodes'][i]['scenes'][e]['utterances'][a]
+                entities = season_in['episodes'][i]['scenes'][e]['rc_entities']
+                d1_filter = {key: d1[key] for key in d1.keys() & {'utterance_id', 'speakers', 'tokens', 'tokens_with_note'}}
+                try:
+                    len_t = len(d1_filter['tokens'])
+                except:
+                    len_t = 0
+                try:
+                    len_twn = len(d1_filter['tokens_with_note'])
+                except:
+                    len_twn = 0
+                if len_t > len_twn:
+                    for u in range(0, len(d1_filter['tokens'])):
+                        tokens = d1_filter['tokens'][u]
+                        speakers = ''.join(d1_filter['speakers'])
+                        # create the df
+                        df = pd.DataFrame()
+                        df['tokens'] = tokens
+                        df['utterance_id'] = d1_filter['utterance_id']
+                        df['speakers'] = speakers
+                        df['chars'] = 'NA'
+                        #df2 = labeller2(entities, df)
+                        df_list.append(df)
+
+                else:
+                    for u in range(0, len(d1_filter['tokens_with_note'])):
+                        tokens = d1_filter['tokens_with_note'][u]
+                        #char = d1_filter['character_entities'][u]
+                        speakers = ''.join(d1_filter['speakers'])
+                        # create the df
+                        df = pd.DataFrame()
+                        df['tokens'] = tokens
+                        df['utterance_id'] = d1_filter['utterance_id']
+                        df['speakers'] = speakers
+                        df['chars'] = 'NA'
+                        #df2 = labeller2(char, df)
+                        df_list.append(df)
+
+    return pd.concat(df_list)
+
+
+def json_download(start, end, method):
+    df_list = []
+    funcs = [dataframe_creation1, dataframe_creation2]
+    for i in range(start, end+1):
+        json_file = 'https://raw.githubusercontent.com/emorynlp/character-mining/master/json/friends_season_0{}.json'.format(i)
+        r = requests.get(json_file)
+        season = json.loads(r.text)
+        new_df = funcs[method](season)
+        df_list.append(new_df)
+        print('done-'+str(i))
+    return pd.concat(df_list)
+
+
+master_list1 = json_download(1, 4, 0)
+master_list2 = json_download(5, 9, 1)
+len(master_list1)
+
+
+
+
+
+"""tokens with note over tokens if both exist
+rc_entities
+u_ent is by name
+p_ent is about plot - ignore
+s_ent is pro-noun
+"""
